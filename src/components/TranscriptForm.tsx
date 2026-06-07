@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardPaste, Play, Sparkles } from "lucide-react";
+import { ClipboardPaste, Play, Sparkles, UsersRound } from "lucide-react";
 import type { MeetingInput } from "@/types/meeting";
 
 type Props = {
@@ -17,7 +17,7 @@ export function TranscriptForm({ input, loading, onChange, onAnalyze, onSample }
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-night px-4 py-3 text-white">
         <div>
           <p className="text-sm font-black">Meeting intake</p>
-          <p className="text-xs text-white/65">Paste Teams transcript, notes, or rough call summary</p>
+          <p className="text-xs text-white/65">Paste a Teams transcript, meeting recap, or Copilot notes</p>
         </div>
         <button
           className="inline-flex min-h-10 items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-night hover:bg-blue-50"
@@ -58,6 +58,11 @@ export function TranscriptForm({ input, loading, onChange, onAnalyze, onSample }
           onChange={(event) => onChange({ ...input, attendees: event.target.value.split(",").map((name) => name.trim()).filter(Boolean) })}
         />
       </label>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <ImportChip label="Teams transcript" />
+        <ImportChip label="Copilot recap" />
+        <ImportChip label="Outlook notes" />
+      </div>
       <label className="mt-4 block">
         <span className="flex items-center gap-2 text-sm font-bold text-night/70">
           <ClipboardPaste size={16} />
@@ -79,5 +84,17 @@ export function TranscriptForm({ input, loading, onChange, onAnalyze, onSample }
         {loading ? "Running accountability agents..." : "Run accountability agent"}
       </button>
     </section>
+  );
+}
+
+function ImportChip({ label }: { label: string }) {
+  return (
+    <button
+      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-cobalt/15 bg-blue-50 px-3 py-2 text-sm font-black text-cobalt"
+      type="button"
+    >
+      <UsersRound size={15} />
+      {label}
+    </button>
   );
 }
