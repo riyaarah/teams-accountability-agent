@@ -7,8 +7,9 @@ import {
 import { useMemo, useState } from "react";
 import { ActionCard, type ReviewStatus } from "@/components/ActionCard";
 import { MeetingChat } from "@/components/MeetingChat";
+import { RiskHeatmap } from "@/components/RiskHeatmap";
+import { SmartNudges } from "@/components/SmartNudges";
 import { TracePanel } from "@/components/TracePanel";
-import { MeetingChatPanel } from "@/components/MeetingChatPanel";
 import type { MeetingAnalysis } from "@/types/meeting";
 
 export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfToken: string }) {
@@ -42,28 +43,18 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
         background: "#111118", border: "1px solid #2e2e3f",
         borderRadius: "16px", overflow: "hidden"
       }}>
-        {/* Score panel */}
         <div style={{
-          background: scoreBg,
-          borderRight: "1px solid #2e2e3f",
+          background: scoreBg, borderRight: "1px solid #2e2e3f",
           padding: "2rem 2.5rem",
           display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
           minWidth: "200px"
         }}>
-          <p style={{ fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 0.5rem" }}>
-            Accountability
-          </p>
-          <div className="font-display" style={{ fontSize: "6rem", fontWeight: 800, color: scoreColor, lineHeight: 1 }}>
-            {analysis.accountabilityScore}
-          </div>
+          <p style={{ fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 0.5rem" }}>Accountability</p>
+          <div className="font-display" style={{ fontSize: "6rem", fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{analysis.accountabilityScore}</div>
           <p style={{ fontSize: "12px", color: "#65625a", margin: "0.5rem 0 0", letterSpacing: "0.04em" }}>/100</p>
         </div>
-
-        {/* Summary + metrics */}
         <div style={{ padding: "1.5rem 2rem" }}>
-          <p style={{ fontSize: "14px", color: "#a8a499", lineHeight: 1.7, margin: "0 0 1.5rem", maxWidth: "600px" }}>
-            {analysis.executiveSummary}
-          </p>
+          <p style={{ fontSize: "14px", color: "#a8a499", lineHeight: 1.7, margin: "0 0 1.5rem", maxWidth: "600px" }}>{analysis.executiveSummary}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "10px" }}>
             <StatCard label="Action items" value={analysis.actionItems.length} />
             <StatCard label="High risk" value={highRisk} color="#e05252" />
@@ -82,28 +73,15 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
         <Panel icon={<UserRoundCheck size={18} color="#c9a84c" />} title="My commitments">
           <div style={{ marginBottom: "12px" }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              background: "#0d0d14", border: "1px solid #232330",
-              borderRadius: "8px", padding: "0 12px"
-            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0d0d14", border: "1px solid #232330", borderRadius: "8px", padding: "0 12px" }}>
               <Filter size={14} color="#c9a84c" />
-              <select
-                style={{
-                  flex: 1, height: "38px", background: "transparent",
-                  border: "none", color: "#f2f0eb", fontSize: "13px",
-                  fontWeight: 600, outline: "none", cursor: "pointer"
-                }}
-                value={selectedOwner}
-                onChange={e => setSelectedOwner(e.target.value)}
-              >
+              <select style={{ flex: 1, height: "38px", background: "transparent", border: "none", color: "#f2f0eb", fontSize: "13px", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                value={selectedOwner} onChange={e => setSelectedOwner(e.target.value)}>
                 {owners.map(o => <option key={o} value={o} style={{ background: "#111118" }}>{o}</option>)}
               </select>
             </div>
           </div>
-          <p style={{ fontSize: "13px", color: "#a8a499", lineHeight: 1.6, background: "#0d0d14", borderRadius: "8px", padding: "10px 12px", marginBottom: "12px" }}>
-            {roleSummary}
-          </p>
+          <p style={{ fontSize: "13px", color: "#a8a499", lineHeight: 1.6, background: "#0d0d14", borderRadius: "8px", padding: "10px 12px", marginBottom: "12px" }}>{roleSummary}</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
             <StatCard label="Visible tasks" value={visibleItems.length} />
             <StatCard label="Blocked" value={visibleItems.filter(i => i.blockers.length > 0).length} color="#d4853a" />
@@ -118,10 +96,7 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
             { t: "Microsoft 365 handoff", d: "Approved tasks can move to Planner, To Do, Outlook follow-up, or a Teams recap." },
             { t: "Sensitive meeting safety", d: "The review queue supports dismissing items before they leave the analysis screen." },
           ].map(row => (
-            <div key={row.t} style={{
-              background: "#0d0d14", border: "1px solid #232330",
-              borderRadius: "8px", padding: "10px 12px"
-            }}>
+            <div key={row.t} style={{ background: "#0d0d14", border: "1px solid #232330", borderRadius: "8px", padding: "10px 12px" }}>
               <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 3px" }}>{row.t}</p>
               <p style={{ fontSize: "12px", color: "#65625a", margin: 0, lineHeight: 1.5 }}>{row.d}</p>
             </div>
@@ -150,9 +125,7 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
           {visibleItems.map(item => (
-            <ActionCard
-              key={item.id}
-              item={item}
+            <ActionCard key={item.id} item={item}
               status={reviewStatuses[item.id] ?? "suggested"}
               onStatusChange={status => setReviewStatuses(cur => ({ ...cur, [item.id]: status }))}
             />
@@ -168,9 +141,7 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
               <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 4px" }}>{d.decision}</p>
               <p className="font-mono" style={{ fontSize: "11px", color: "#65625a", margin: 0 }}>{d.evidence}</p>
             </div>
-          )) : (
-            <p style={{ fontSize: "13px", color: "#65625a" }}>No explicit decisions detected.</p>
-          )}
+          )) : <p style={{ fontSize: "13px", color: "#65625a" }}>No explicit decisions detected.</p>}
         </Panel>
 
         <Panel icon={<HelpCircle size={18} color="#c9a84c" />} title="Open questions">
@@ -179,9 +150,7 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
               <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 4px" }}>{q.question}</p>
               <p style={{ fontSize: "12px", color: "#65625a", margin: 0 }}>Owner: {q.suggestedOwner} · {q.whyItMatters}</p>
             </div>
-          )) : (
-            <p style={{ fontSize: "13px", color: "#65625a" }}>No open questions detected.</p>
-          )}
+          )) : <p style={{ fontSize: "13px", color: "#65625a" }}>No open questions detected.</p>}
         </Panel>
       </div>
 
@@ -191,24 +160,23 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
         <CodeArtifact icon={<Mail size={16} />} title="Follow-up email" text={analysis.followUpEmail} />
       </div>
 
-      {/* Chat */}
+      {/* Heatmap + Nudges */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-        <MeetingChatPanel analysis={analysis} />
-        {/* Chat */}
+        <RiskHeatmap analysis={analysis} />
+        <SmartNudges analysis={analysis} />
+      </div>
+
+      {/* Chat */}
       <MeetingChat analysis={analysis} hfToken={hfToken} />
 
       <TracePanel steps={analysis.agentTrace} />
-      </div>
     </div>
   );
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div style={{
-      background: "#0d0d14", border: "1px solid #1a1a24",
-      borderRadius: "8px", padding: "10px 12px"
-    }}>
+    <div style={{ background: "#0d0d14", border: "1px solid #1a1a24", borderRadius: "8px", padding: "10px 12px" }}>
       <p style={{ fontSize: "10px", fontWeight: 600, color: "#3a3a50", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 5px" }}>{label}</p>
       <p className="font-display" style={{ fontSize: "1.75rem", fontWeight: 800, color: color ?? "#f2f0eb", margin: 0 }}>{value}</p>
     </div>
@@ -229,28 +197,12 @@ function Panel({ icon, title, children }: { icon: React.ReactNode; title: string
 
 function M365Btn({ icon, label, detail, disabled }: { icon: React.ReactNode; label: string; detail: string; disabled: boolean }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      style={{
-        textAlign: "left", background: "#0d0d14",
-        border: `1px solid ${disabled ? "#1a1a24" : "#2e2e3f"}`,
-        borderRadius: "10px", padding: "14px",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.4 : 1,
-        transition: "all 0.15s"
-      }}
+    <button type="button" disabled={disabled}
+      style={{ textAlign: "left", background: "#0d0d14", border: `1px solid ${disabled ? "#1a1a24" : "#2e2e3f"}`, borderRadius: "10px", padding: "14px", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1, transition: "all 0.15s" }}
       onMouseEnter={e => { if (!disabled) (e.currentTarget.style.borderColor = "#8a6d2e"); }}
       onMouseLeave={e => { if (!disabled) (e.currentTarget.style.borderColor = "#2e2e3f"); }}
     >
-      <div style={{
-        width: "32px", height: "32px", borderRadius: "8px",
-        background: "rgba(201,168,76,0.1)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "#c9a84c", marginBottom: "10px"
-      }}>
-        {icon}
-      </div>
+      <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#c9a84c", marginBottom: "10px" }}>{icon}</div>
       <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 3px" }}>{label}</p>
       <p style={{ fontSize: "11px", color: "#65625a", margin: 0 }}>{detail}</p>
     </button>
@@ -264,29 +216,18 @@ function CodeArtifact({ icon, title, text }: { icon: React.ReactNode; title: str
         <span style={{ color: "#c9a84c" }}>{icon}</span>
         <h2 className="font-display" style={{ fontWeight: 700, fontSize: "15px", color: "#f2f0eb", margin: 0 }}>{title}</h2>
       </div>
-      <pre className="font-mono" style={{
-        maxHeight: "320px", overflowY: "auto",
-        padding: "1rem 1.25rem",
-        fontSize: "12px", lineHeight: 1.7,
-        color: "#a8a499", margin: 0,
-        whiteSpace: "pre-wrap"
-      }}>
-        {text}
-      </pre>
+      <pre className="font-mono" style={{ maxHeight: "320px", overflowY: "auto", padding: "1rem 1.25rem", fontSize: "12px", lineHeight: 1.7, color: "#a8a499", margin: 0, whiteSpace: "pre-wrap" }}>{text}</pre>
     </div>
   );
 }
 
 function buildApprovedPlannerExport(items: MeetingAnalysis["actionItems"]) {
-  return items
-    .map(item => `${item.id} | ${item.suggestedPlannerBucket} | ${item.owner} | ${item.dueDate} | ${item.task} | Risk: ${item.risk.toUpperCase()} | APPROVED`)
-    .join("\n");
+  return items.map(item => `${item.id} | ${item.suggestedPlannerBucket} | ${item.owner} | ${item.dueDate} | ${item.task} | Risk: ${item.risk.toUpperCase()} | APPROVED`).join("\n");
 }
 
 function buildRoleSummary(owner: string, items: MeetingAnalysis["actionItems"]) {
   const blocked = items.filter(i => i.blockers.length > 0).length;
   const highRisk = items.filter(i => i.risk === "high").length;
-  if (owner === "All employees")
-    return `${items.length} tasks across the meeting — ${blocked} blocked, ${highRisk} high-risk.`;
+  if (owner === "All employees") return `${items.length} tasks across the meeting — ${blocked} blocked, ${highRisk} high-risk.`;
   return `${owner} has ${items.length} commitments, ${blocked} blockers to clear, ${highRisk} high-risk items.`;
 }
