@@ -1,133 +1,156 @@
 import { NextResponse } from "next/server";
-import type { MeetingInput, MeetingAnalysis } from "@/types/meeting";
 
-async function callGroq(systemPrompt: string, userPrompt: string): Promise<string> {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      max_tokens: 1000,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ]
-    })
-  });
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
+const HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3";
+
+type MeetingInput = {
+  title: string;
+  transcript: string;
+  attendees: string[];
+  meetingDate: string;
+  urgency: "normal" | "high" | "critical";
+};
+
+type MeetingAnalysis = {
+  title: string;
+  executiveSummary: string;
+  actionItems: Array<{
+    id: string;
+    task: string;
+    owner: string;
+    dueDate: string;
+    confidence: number;
+    risk: "low" | "medium" | "high";
+    riskScore: number;
+    blockers: string[];
+    evidence: string;
+    suggestedPlannerBucket: string;
+    followUpMessage: string;
+  }>;
+  decisions: Array<{ decision: string; owner?: string | null; evidence: string }>;
+  openQuestions: Array<{ question: string; suggestedOwner: string; whyItMatters: string }>;
+  followUpEmail: string;
+  plannerExport: string;
+  agentTrace: Array<{ agent: string; status: "complete" | "warning"; summary: string }>;
+  accountabilityScore: number;
+};
 
 function safeJson<T>(text: string, fallback: T): T {
   try {
     const clean = text.replace(/```json|```/g, "").trim();
     return JSON.parse(clean) as T;
-  } catch {
+  } catch (error) {
+    console.error("safeJson parse error", error, text);
     return fallback;
   }
 }
 
+function buildPrompt(input: MeetingInput) {
+  return `You are an accountability agent.
+Analyze the meeting transcript below and return ONLY valid JSON that matches the following structure exactly:
+{
+  "title": string,
+  "executiveSummary": string,
+  "actionItems": [
+    {
+      "id": string,
+      "task": string,
+      "owner": string,
+      "dueDate": string,
+      "confidence": number,
+      "risk": "low" | "medium" | "high",
+      "riskScore": number,
+      "blockers": [string],
+      "evidence": string,
+      "suggestedPlannerBucket": string,
+      "followUpMessage": string
+    }
+  ],
+  "decisions": [{ "decision": string, "owner": string | null, "evidence": string }],
+  "openQuestions": [{ "question": string, "suggestedOwner": string, "whyItMatters": string }],
+  "followUpEmail": string,
+  "plannerExport": string,
+  "agentTrace": [{ "agent": string, "status": "complete" | "warning", "summary": string }],
+  "accountabilityScore": number
+}
+
+Meeting title: ${input.title}
+Date: ${input.meetingDate}
+Urgency: ${input.urgency}
+Attendees: ${input.attendees.join(", ") || "unknown"}
+
+Transcript:
+${input.transcript}`;
+}
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as Partial<MeetingInput>;
-    const transcript = body.transcript?.trim();
-    if (!transcript) {
-      return NextResponse.json({ error: "Add a meeting transcript or notes before running the agent." }, { status: 400 });
+    const body = await request.json().catch((err) => {
+      console.error("Failed to parse request body", err);
+      return null;
+    });
+
+    if (!body) {
+      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    const input: MeetingInput = {
-      title: body.title?.trim() || "Untitled meeting",
-      transcript,
-      attendees: Array.isArray(body.attendees) ? body.attendees.filter(Boolean) : [],
-      meetingDate: body.meetingDate || new Date().toISOString().slice(0, 10),
-      urgency: body.urgency || "normal"
-    };
+    const input = (body.input ?? body) as MeetingInput;
+    const hfToken = body.hfToken || body.hf_token;
 
-    const context = `Meeting: "${input.title}" | Date: ${input.meetingDate} | Urgency: ${input.urgency} | Attendees: ${input.attendees.join(", ") || "unknown"}`;
+    if (!input || typeof input.transcript !== "string") {
+      return NextResponse.json({ error: "Transcript is required." }, { status: 400 });
+    }
 
-    // AGENT 1: Extract action items
-    const actionRaw = await callGroq(
-      `You are a commitment extraction agent. Extract every action item, task, or commitment from meeting transcripts.
-Return ONLY valid JSON array. No markdown, no explanation.
-Each item: { "id": "ACT-01", "task": "string", "owner": "string or Unassigned", "dueDate": "string or Needs date", "confidence": 0-100, "riskScore": 0-100, "blockers": ["string"], "evidence": "exact quote from transcript", "suggestedPlannerBucket": "Committed|At risk|Needs clarification", "followUpMessage": "short Teams message to send" }
-Risk score: 0=low, 100=high. Higher if: no owner, no date, has blockers, urgency is high/critical.`,
-      `${context}\n\nTranscript:\n${input.transcript}`
-    );
+    if (!hfToken || typeof hfToken !== "string" || !hfToken.trim()) {
+      return NextResponse.json({ error: "HuggingFace token is required." }, { status: 400 });
+    }
 
-    const actionItems = safeJson<MeetingAnalysis["actionItems"]>(actionRaw, []).map((item, i) => ({
-      ...item,
-      id: `ACT-${String(i + 1).padStart(2, "0")}`,
-      risk: item.riskScore >= 70 ? "high" : item.riskScore >= 45 ? "medium" : "low" as "low" | "medium" | "high"
-    }));
+    const prompt = buildPrompt(input);
+    const response = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${hfToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          max_new_tokens: 400,
+          temperature: 0.2,
+          return_full_text: false
+        }
+      })
+    });
 
-    // AGENT 2: Extract decisions
-    const decisionsRaw = await callGroq(
-      `You are a decision capture agent. Extract explicit decisions made in meeting transcripts.
-Return ONLY valid JSON array. No markdown, no explanation.
-Each item: { "decision": "string", "owner": "string or null", "evidence": "exact quote" }`,
-      `${context}\n\nTranscript:\n${input.transcript}`
-    );
-    const decisions = safeJson<MeetingAnalysis["decisions"]>(decisionsRaw, []);
+    if (!response.ok) {
+      const err = await response.json().catch(() => null);
+      console.error("HuggingFace response error", response.status, response.statusText, err);
+      return NextResponse.json({ error: err?.error ?? `HuggingFace error ${response.status}` }, { status: 400 });
+    }
 
-    // AGENT 3: Extract open questions
-    const questionsRaw = await callGroq(
-      `You are an open question detector. Find unresolved questions, unclear ownership, or deferred decisions in meeting transcripts.
-Return ONLY valid JSON array. No markdown, no explanation.
-Each item: { "question": "string", "suggestedOwner": "string", "whyItMatters": "one sentence" }`,
-      `${context}\n\nTranscript:\n${input.transcript}`
-    );
-    const openQuestions = safeJson<MeetingAnalysis["openQuestions"]>(questionsRaw, []);
+    const data = await response.json();
+    const text = Array.isArray(data) ? data[0]?.generated_text?.trim() : data?.generated_text?.trim();
 
-    // AGENT 4: Risk scorer + summary
-    const summaryRaw = await callGroq(
-      `You are a risk and accountability scorer. Given meeting analysis data, produce an executive summary and accountability score.
-Return ONLY valid JSON: { "executiveSummary": "2 sentences max", "accountabilityScore": 0-100, "followUpEmail": "full email text with subject line" }
-Score 100 = every task has owner + deadline. Score 0 = nothing is owned or dated.`,
-      `${context}
-Action items: ${JSON.stringify(actionItems.map(a => ({ owner: a.owner, dueDate: a.dueDate, risk: a.risk })))}
-Decisions: ${decisions.length}
-Open questions: ${openQuestions.length}`
-    );
-
-    const scored = safeJson<{ executiveSummary: string; accountabilityScore: number; followUpEmail: string }>(
-      summaryRaw,
-      {
-        executiveSummary: `${input.title} produced ${actionItems.length} action items and ${openQuestions.length} open questions.`,
-        accountabilityScore: 50,
-        followUpEmail: `Subject: Follow-up: ${input.title}\n\nHi team,\n\nPlease review your action items from today's meeting.`
-      }
-    );
-
-    const plannerExport = actionItems
-      .map(item => `${item.id} | ${item.suggestedPlannerBucket} | ${item.owner} | ${item.dueDate} | ${item.task} | Risk: ${item.risk.toUpperCase()}`)
-      .join("\n");
-
-    const agentTrace = [
-      { agent: "Commitment Extraction Agent", status: actionItems.some(a => a.owner === "Unassigned") ? "warning" : "complete", summary: `Found ${actionItems.length} commitments. ${actionItems.filter(a => a.owner === "Unassigned").length} unassigned.` },
-      { agent: "Decision Capture Agent", status: "complete", summary: `Captured ${decisions.length} explicit decisions.` },
-      { agent: "Open Question Detector", status: openQuestions.length ? "warning" : "complete", summary: `Found ${openQuestions.length} unresolved questions.` },
-      { agent: "Risk & Accountability Scorer", status: scored.accountabilityScore < 60 ? "warning" : "complete", summary: `Accountability score: ${scored.accountabilityScore}/100.` }
-    ] as MeetingAnalysis["agentTrace"];
-
-    const analysis: MeetingAnalysis = {
+    const fallback: MeetingAnalysis = {
       title: input.title,
-      executiveSummary: scored.executiveSummary,
-      actionItems,
-      decisions,
-      openQuestions,
-      followUpEmail: scored.followUpEmail,
-      plannerExport,
-      agentTrace,
-      accountabilityScore: scored.accountabilityScore
+      executiveSummary: "The model did not return a structured analysis.",
+      actionItems: [],
+      decisions: [],
+      openQuestions: [],
+      followUpEmail: "Review the transcript and define action items manually.",
+      plannerExport: "",
+      agentTrace: [{ agent: "Accountability analyzer", status: "warning", summary: "Unable to parse model response into structured JSON." }],
+      accountabilityScore: 0
     };
 
+    if (!text) {
+      console.error("No text returned from HuggingFace response", data);
+      return NextResponse.json(fallback);
+    }
+
+    const analysis = safeJson<MeetingAnalysis>(text, fallback);
     return NextResponse.json(analysis);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "The accountability agent could not process this transcript." }, { status: 500 });
+    console.error("Analyze route unexpected error", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

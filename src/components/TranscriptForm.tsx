@@ -57,36 +57,32 @@ export function TranscriptForm({ input, loading, hfToken, onChange, onAnalyze, o
       </div>
 
       <div style={{ padding: "1.25rem" }}>
-        {/* Title + Urgency */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+        {/* Title + Urgency + Language */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
           <div>
-            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
-              Meeting title
-            </label>
-            <input
-              className="field"
-              style={{ height: "40px", padding: "0 12px", fontSize: "14px" }}
-              value={input.title}
-              onChange={(e) => onChange({ ...input, title: e.target.value })}
-              placeholder="Q3 planning sync…"
-            />
+            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>Meeting title</label>
+            <input className="field" style={{ height: "40px", padding: "0 12px", fontSize: "14px" }} value={input.title} onChange={(e) => onChange({ ...input, title: e.target.value })} placeholder="Q3 planning sync…" />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
-              Urgency
-            </label>
-            <select
-              className="field"
-              style={{
-                height: "40px", padding: "0 12px", fontSize: "14px",
-                background: urgency.bg, borderColor: urgency.border, color: urgency.text
-              }}
-              value={input.urgency}
-              onChange={(e) => onChange({ ...input, urgency: e.target.value as MeetingInput["urgency"] })}
-            >
+            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>Urgency</label>
+            <select className="field" style={{ height: "40px", padding: "0 12px", fontSize: "14px", background: urgency.bg, borderColor: urgency.border, color: urgency.text }} value={input.urgency} onChange={(e) => onChange({ ...input, urgency: e.target.value as MeetingInput["urgency"] })}>
               <option value="normal">Normal</option>
               <option value="high">High</option>
               <option value="critical">Critical</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>Language</label>
+            <select className="field" style={{ height: "40px", padding: "0 12px", fontSize: "14px" }} value={input.language ?? "en"} onChange={(e) => onChange({ ...input, language: e.target.value })}>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="hi">Hindi</option>
+              <option value="ar">Arabic</option>
+              <option value="zh">Chinese</option>
+              <option value="ja">Japanese</option>
+              <option value="pt">Portuguese</option>
             </select>
           </div>
         </div>

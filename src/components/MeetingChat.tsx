@@ -75,32 +75,19 @@ export function MeetingChat({ analysis, hfToken }: { analysis: MeetingAnalysis; 
 
     try {
       const prompt = buildPrompt(analysis, messages, query);
-      const response = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+      const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${hfToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 300,
-            temperature: 0.4,
-            return_full_text: false,
-            stop: ["[INST]", "</s>"]
-          }
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, hfToken })
       });
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error ?? "HuggingFace API error");
+        throw new Error(err.error ?? "API error");
       }
 
       const data = await response.json();
-      const reply = Array.isArray(data)
-        ? data[0]?.generated_text?.trim()
-        : data?.generated_text?.trim();
+      const reply = data.text ?? "I couldn't generate a response. Please try again.";
 
       setMessages(prev => [...prev, {
         role: "assistant",

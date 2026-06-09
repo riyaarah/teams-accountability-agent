@@ -6,9 +6,11 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionCard, type ReviewStatus } from "@/components/ActionCard";
+import { ExportPDF } from "@/components/ExportPDF";
 import { MeetingChat } from "@/components/MeetingChat";
 import { RiskHeatmap } from "@/components/RiskHeatmap";
 import { SmartNudges } from "@/components/SmartNudges";
+import { TaskTracker } from "@/components/TaskTracker";
 import { TracePanel } from "@/components/TracePanel";
 import type { MeetingAnalysis } from "@/types/meeting";
 
@@ -164,6 +166,14 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
         <RiskHeatmap analysis={analysis} />
         <SmartNudges analysis={analysis} />
+      </div>
+
+      {/* Task tracker */}
+      <TaskTracker analysis={analysis} />
+
+      {/* Export */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <ExportPDF analysis={analysis} />
       </div>
 
       {/* Chat */}

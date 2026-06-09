@@ -4,6 +4,7 @@ export type MeetingInput = {
   attendees: string[];
   meetingDate: string;
   urgency: "normal" | "high" | "critical";
+  language?: string;
 };
 
 export type ActionRisk = "low" | "medium" | "high";

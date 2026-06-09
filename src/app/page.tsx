@@ -4,6 +4,7 @@ import { Bot, BrainCircuit, CheckCircle2, Clock, FileText, ShieldCheck, Workflow
 import { useEffect, useState } from "react";
 import { Leaderboard } from "@/components/Leaderboard";
 import { MeetingHistory } from "@/components/MeetingHistory";
+import { ScoreTrendChart } from "@/components/ScoreTrendChart";
 import { Results } from "@/components/Results";
 import { TranscriptForm } from "@/components/TranscriptForm";
 import { defaultAttendees, sampleTranscript } from "@/lib/sample";
@@ -38,7 +39,7 @@ export default function Home() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input)
+        body: JSON.stringify({ input, hfToken })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Could not analyze this meeting.");
@@ -124,7 +125,8 @@ export default function Home() {
         )}
 
         {activeTab === "history" && (
-          <section style={{ maxWidth: "900px", margin: "0 auto", padding: "3rem 2rem" }}>
+          <section style={{ maxWidth: "900px", margin: "0 auto", padding: "3rem 2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <ScoreTrendChart history={history} />
             <MeetingHistory
               history={history}
               onSelect={entry => { setAnalysis(entry.analysis); setActiveTab("analyze"); }}
