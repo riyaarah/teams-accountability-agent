@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, BrainCircuit, CheckCircle2, Clock, FileText, ShieldCheck, Workflow } from "lucide-react";
+import { Bot, BrainCircuit, CheckCircle2, Clock, FileText, ShieldCheck, Workflow, Zap } from "lucide-react";
 import { useState } from "react";
 import { Results } from "@/components/Results";
 import { TranscriptForm } from "@/components/TranscriptForm";
@@ -20,6 +20,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<MeetingAnalysis>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [hfToken, setHfToken] = useState("");
 
   function loadSample() {
     setInput({ ...initialInput, transcript: sampleTranscript });
@@ -28,7 +29,6 @@ export default function Home() {
   async function analyze() {
     setLoading(true);
     setError(undefined);
-
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -46,62 +46,198 @@ export default function Home() {
   }
 
   return (
-    <main>
-      <section className="mx-auto grid min-h-[92vh] max-w-7xl gap-8 px-5 py-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-center lg:px-8">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-cobalt/15 bg-white/80 px-3 py-2 text-sm font-black text-cobalt shadow-sm">
-            <Bot size={16} />
-            Microsoft-style accountability agent
+    <div style={{ minHeight: "100vh" }}>
+      {/* Top nav bar */}
+      <nav style={{
+        borderBottom: "1px solid #2e2e3f",
+        background: "rgba(9,9,12,0.85)",
+        backdropFilter: "blur(20px)",
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        padding: "0 2rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        height: "56px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            width: "28px", height: "28px", borderRadius: "7px",
+            background: "linear-gradient(135deg,#c9a84c,#a07830)",
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
+            <Bot size={15} color="#09090c" />
           </div>
-          <h1 className="mt-5 max-w-2xl text-5xl font-black leading-[0.96] text-night md:text-7xl">
-            Turn meetings into ownership.
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-night/70">
-            Paste a Teams transcript and the agent extracts commitments, detects vague tasks, flags risk, drafts follow-ups, and produces Planner-ready task rows.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Badge icon={<BrainCircuit size={15} />} label="Agent trace" dark />
-            <Badge icon={<ShieldCheck size={15} />} label="Risk scoring" />
-            <Badge icon={<FileText size={15} />} label="Planner export" />
-          </div>
-          <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            <Signal icon={<Workflow size={18} />} title="Multi-agent flow" copy="Intake, extraction, risk, and follow-up stages." />
-            <Signal icon={<CheckCircle2 size={18} />} title="Accountability-first" copy="Flags missing owners, dates, blockers, and vague tasks." />
-            <Signal icon={<Clock size={18} />} title="Fast demo" copy="One sample transcript shows the full workflow." />
-          </div>
+          <span className="font-display" style={{ fontWeight: 700, fontSize: "15px", color: "#f2f0eb", letterSpacing: "0.01em" }}>
+            Accountability Agent
+          </span>
+          <span style={{
+            marginLeft: "8px", padding: "2px 8px", borderRadius: "4px",
+            background: "#1a1a24", border: "1px solid #2e2e3f",
+            fontSize: "11px", fontWeight: 600, color: "#8a6d2e", letterSpacing: "0.06em", textTransform: "uppercase"
+          }}>
+            MS Teams
+          </span>
         </div>
-        <TranscriptForm input={input} loading={loading} onChange={setInput} onAnalyze={analyze} onSample={loadSample} />
-      </section>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <StatusDot label="AI Ready" />
+          <StatusDot label="M365 Connected" />
+        </div>
+      </nav>
 
-      <section className="mx-auto max-w-7xl space-y-6 px-5 pb-12 lg:px-8">
-        {loading ? (
-          <div className="rounded-lg border border-night/10 bg-white p-6 shadow-crisp">
-            <p className="font-black">Running agent pipeline...</p>
-            <p className="mt-1 text-night/60">Extracting commitments, assigning risk, and drafting follow-up artifacts.</p>
+      {/* Hero */}
+      <main>
+        <section style={{ maxWidth: "1280px", margin: "0 auto", padding: "4rem 2rem 2rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5rem", alignItems: "start" }}>
+            {/* Left */}
+            <div>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                padding: "6px 14px", borderRadius: "100px",
+                border: "1px solid #8a6d2e",
+                background: "rgba(201,168,76,0.06)",
+                marginBottom: "1.5rem"
+              }}>
+                <Zap size={13} color="#c9a84c" />
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#c9a84c", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  Multi-agent pipeline
+                </span>
+              </div>
+
+              <h1 className="font-display" style={{
+                fontSize: "clamp(2.5rem,5vw,4.5rem)",
+                fontWeight: 800,
+                lineHeight: 0.95,
+                color: "#f2f0eb",
+                margin: "0 0 1.25rem",
+                letterSpacing: "-0.02em"
+              }}>
+                Turn meetings<br />
+                <span style={{
+                  background: "linear-gradient(135deg,#c9a84c,#f0d080)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent"
+                }}>into ownership.</span>
+              </h1>
+
+              <p style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "#a8a499", margin: "0 0 2rem", maxWidth: "480px" }}>
+                Paste a Teams transcript and the agent extracts commitments, scores risk, flags vague tasks, and produces Planner-ready task rows — with full human review before anything ships.
+              </p>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "2.5rem" }}>
+                <Pill icon={<BrainCircuit size={13} />} label="Agent trace" gold />
+                <Pill icon={<ShieldCheck size={13} />} label="Risk scoring" />
+                <Pill icon={<FileText size={13} />} label="Planner export" />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                <FeatureCard icon={<Workflow size={16} />} title="Multi-stage flow" copy="Intake, extract, risk, and follow-up." />
+                <FeatureCard icon={<CheckCircle2 size={16} />} title="Accountability-first" copy="Flags missing owners, dates, blockers." />
+                <FeatureCard icon={<Clock size={16} />} title="Fast demo" copy="One sample shows the full pipeline." />
+              </div>
+            </div>
+
+            {/* Right — form */}
+            <div>
+              <TranscriptForm input={input} loading={loading} onChange={setInput} onAnalyze={analyze} onSample={loadSample} hfToken={hfToken} onHfTokenChange={setHfToken} />
+            </div>
           </div>
-        ) : null}
-        {error ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div> : null}
-        {analysis && !loading ? <Results analysis={analysis} /> : null}
-      </section>
-    </main>
+        </section>
+
+        {/* Results */}
+        <section style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 2rem 4rem" }}>
+          {loading && <LoadingState />}
+          {error && (
+            <div style={{
+              background: "#3d1a1a", border: "1px solid #7a2020",
+              borderRadius: "12px", padding: "1rem 1.25rem",
+              color: "#e05252", fontWeight: 600
+            }}>
+              {error}
+            </div>
+          )}
+          {analysis && !loading && <Results analysis={analysis} hfToken={hfToken} />}
+        </section>
+      </main>
+    </div>
   );
 }
 
-function Badge({ icon, label, dark }: { icon: React.ReactNode; label: string; dark?: boolean }) {
+function StatusDot({ label }: { label: string }) {
   return (
-    <span className={dark ? "inline-flex items-center gap-2 rounded-full bg-night px-4 py-2 text-sm font-black text-white" : "inline-flex items-center gap-2 rounded-full border border-cobalt/15 bg-white/75 px-4 py-2 text-sm font-black text-cobalt"}>
+    <div style={{
+      display: "flex", alignItems: "center", gap: "6px",
+      padding: "4px 10px", borderRadius: "100px",
+      background: "#111118", border: "1px solid #2e2e3f"
+    }}>
+      <div style={{
+        width: "6px", height: "6px", borderRadius: "50%",
+        background: "#4caf7d",
+        boxShadow: "0 0 6px #4caf7d"
+      }} />
+      <span style={{ fontSize: "11px", fontWeight: 500, color: "#a8a499" }}>{label}</span>
+    </div>
+  );
+}
+
+function Pill({ icon, label, gold }: { icon: React.ReactNode; label: string; gold?: boolean }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "6px",
+      padding: "6px 14px", borderRadius: "100px",
+      border: `1px solid ${gold ? "#8a6d2e" : "#2e2e3f"}`,
+      background: gold ? "rgba(201,168,76,0.08)" : "#1a1a24",
+      fontSize: "12px", fontWeight: 600,
+      color: gold ? "#c9a84c" : "#a8a499",
+      letterSpacing: "0.04em"
+    }}>
       {icon}
       {label}
     </span>
   );
 }
 
-function Signal({ icon, title, copy }: { icon: React.ReactNode; title: string; copy: string }) {
+function FeatureCard({ icon, title, copy }: { icon: React.ReactNode; title: string; copy: string }) {
   return (
-    <div className="glass rounded-lg border border-white/75 p-4 shadow-sm">
-      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-cobalt">{icon}</div>
-      <p className="mt-3 font-black">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-night/60">{copy}</p>
+    <div style={{
+      background: "#111118", border: "1px solid #2e2e3f",
+      borderRadius: "10px", padding: "1rem"
+    }}>
+      <div style={{
+        width: "32px", height: "32px", borderRadius: "8px",
+        background: "rgba(201,168,76,0.1)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#c9a84c", marginBottom: "10px"
+      }}>
+        {icon}
+      </div>
+      <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 4px" }}>{title}</p>
+      <p style={{ fontSize: "12px", color: "#65625a", margin: 0, lineHeight: 1.5 }}>{copy}</p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div style={{
+      background: "#111118", border: "1px solid #2e2e3f",
+      borderRadius: "12px", padding: "2rem",
+      display: "flex", alignItems: "center", gap: "1.5rem"
+    }}>
+      <div style={{ display: "flex", gap: "6px" }}>
+        {[0,1,2].map(i => (
+          <div key={i} className="loading-dot" style={{
+            width: "8px", height: "8px", borderRadius: "50%",
+            background: "#c9a84c",
+            animationDelay: `${i * 0.2}s`
+          }} />
+        ))}
+      </div>
+      <div>
+        <p className="font-display" style={{ fontWeight: 700, color: "#f2f0eb", margin: "0 0 4px" }}>Running agent pipeline</p>
+        <p style={{ fontSize: "13px", color: "#65625a", margin: 0 }}>Extracting commitments, assigning risk, drafting follow-up artifacts…</p>
+      </div>
     </div>
   );
 }

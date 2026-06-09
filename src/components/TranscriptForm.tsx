@@ -2,99 +2,172 @@
 
 import { ClipboardPaste, Play, Sparkles, UsersRound } from "lucide-react";
 import type { MeetingInput } from "@/types/meeting";
+import { TranscriptUpload } from "@/components/TranscriptUpload";
 
 type Props = {
   input: MeetingInput;
   loading: boolean;
+  hfToken: string;
   onChange: (input: MeetingInput) => void;
   onAnalyze: () => void;
   onSample: () => void;
+  onHfTokenChange: (token: string) => void;
 };
 
-export function TranscriptForm({ input, loading, onChange, onAnalyze, onSample }: Props) {
+const urgencyColors = {
+  normal: { bg: "#1a2a1a", border: "#2d4a2d", text: "#4caf7d" },
+  high: { bg: "#2a2010", border: "#4a3510", text: "#d4853a" },
+  critical: { bg: "#2a1010", border: "#4a2020", text: "#e05252" },
+};
+
+export function TranscriptForm({ input, loading, hfToken, onChange, onAnalyze, onSample, onHfTokenChange }: Props) {
+  const urgency = urgencyColors[input.urgency];
+
   return (
-    <section className="glass rounded-lg border border-white/80 p-5 shadow-crisp">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-night px-4 py-3 text-white">
+    <div style={{
+      background: "#111118",
+      border: "1px solid #2e2e3f",
+      borderRadius: "16px",
+      overflow: "hidden"
+    }}>
+      {/* Header bar */}
+      <div style={{
+        background: "#0d0d14",
+        borderBottom: "1px solid #2e2e3f",
+        padding: "1rem 1.25rem",
+        display: "flex", justifyContent: "space-between", alignItems: "center"
+      }}>
         <div>
-          <p className="text-sm font-black">Meeting intake</p>
-          <p className="text-xs text-white/65">Paste a Teams transcript, meeting recap, or Copilot notes</p>
+          <p className="font-display" style={{ fontWeight: 700, fontSize: "14px", color: "#f2f0eb", margin: "0 0 2px" }}>
+            Meeting intake
+          </p>
+          <p style={{ fontSize: "12px", color: "#65625a", margin: 0 }}>
+            Paste a Teams transcript, Copilot recap, or meeting notes
+          </p>
         </div>
         <button
-          className="inline-flex min-h-10 items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-night hover:bg-blue-50"
+          className="btn-ghost"
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", fontSize: "13px", fontWeight: 600 }}
           type="button"
           onClick={onSample}
         >
-          <Sparkles size={15} />
+          <Sparkles size={14} />
           Load sample
         </button>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label>
-          <span className="text-sm font-bold text-night/70">Meeting title</span>
-          <input
-            className="mt-2 h-12 w-full rounded-md border border-night/10 bg-white px-3 outline-none focus:border-cobalt"
-            value={input.title}
-            onChange={(event) => onChange({ ...input, title: event.target.value })}
-          />
-        </label>
-        <label>
-          <span className="text-sm font-bold text-night/70">Urgency</span>
-          <select
-            className="mt-2 h-12 w-full rounded-md border border-night/10 bg-white px-3 outline-none focus:border-cobalt"
-            value={input.urgency}
-            onChange={(event) => onChange({ ...input, urgency: event.target.value as MeetingInput["urgency"] })}
-          >
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-        </label>
-      </div>
-      <label className="mt-4 block">
-        <span className="text-sm font-bold text-night/70">Attendees</span>
-        <input
-          className="mt-2 h-12 w-full rounded-md border border-night/10 bg-white px-3 outline-none focus:border-cobalt"
-          value={input.attendees.join(", ")}
-          onChange={(event) => onChange({ ...input, attendees: event.target.value.split(",").map((name) => name.trim()).filter(Boolean) })}
-        />
-      </label>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <ImportChip label="Teams transcript" />
-        <ImportChip label="Copilot recap" />
-        <ImportChip label="Outlook notes" />
-      </div>
-      <label className="mt-4 block">
-        <span className="flex items-center gap-2 text-sm font-bold text-night/70">
-          <ClipboardPaste size={16} />
-          Transcript or meeting notes
-        </span>
-        <textarea
-          className="mt-2 min-h-[330px] w-full resize-y rounded-md border border-night/10 bg-white p-4 leading-7 outline-none focus:border-cobalt"
-          value={input.transcript}
-          onChange={(event) => onChange({ ...input, transcript: event.target.value })}
-        />
-      </label>
-      <button
-        className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-cobalt px-5 py-3 font-black text-white shadow-crisp transition hover:-translate-y-0.5 hover:bg-violet disabled:cursor-not-allowed disabled:opacity-60"
-        type="button"
-        onClick={onAnalyze}
-        disabled={loading}
-      >
-        <Play size={18} />
-        {loading ? "Running accountability agents..." : "Run accountability agent"}
-      </button>
-    </section>
-  );
-}
 
-function ImportChip({ label }: { label: string }) {
-  return (
-    <button
-      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-cobalt/15 bg-blue-50 px-3 py-2 text-sm font-black text-cobalt"
-      type="button"
-    >
-      <UsersRound size={15} />
-      {label}
-    </button>
+      <div style={{ padding: "1.25rem" }}>
+        {/* Title + Urgency */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+              Meeting title
+            </label>
+            <input
+              className="field"
+              style={{ height: "40px", padding: "0 12px", fontSize: "14px" }}
+              value={input.title}
+              onChange={(e) => onChange({ ...input, title: e.target.value })}
+              placeholder="Q3 planning sync…"
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+              Urgency
+            </label>
+            <select
+              className="field"
+              style={{
+                height: "40px", padding: "0 12px", fontSize: "14px",
+                background: urgency.bg, borderColor: urgency.border, color: urgency.text
+              }}
+              value={input.urgency}
+              onChange={(e) => onChange({ ...input, urgency: e.target.value as MeetingInput["urgency"] })}
+            >
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Attendees */}
+        <div style={{ marginBottom: "12px" }}>
+          <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+            Attendees
+          </label>
+          <input
+            className="field"
+            style={{ height: "40px", padding: "0 12px 0 38px", fontSize: "14px", position: "relative" }}
+            value={input.attendees.join(", ")}
+            onChange={(e) => onChange({ ...input, attendees: e.target.value.split(",").map(n => n.trim()).filter(Boolean) })}
+            placeholder="Sarah, James, Priya…"
+          />
+        </div>
+
+        {/* Import chips */}
+        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+          {["Teams transcript", "Copilot recap", "Outlook notes"].map(label => (
+            <button
+              key={label}
+              className="btn-ghost"
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", padding: "7px 8px", fontSize: "12px", fontWeight: 600 }}
+              type="button"
+            >
+              <UsersRound size={13} />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Upload */}
+        <TranscriptUpload onTranscript={text => onChange({ ...input, transcript: text })} />
+
+        {/* Transcript */}
+        <div style={{ marginBottom: "14px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+            <ClipboardPaste size={13} />
+            Transcript or meeting notes
+          </label>
+          <textarea
+            className="field"
+            style={{ minHeight: "280px", padding: "12px", fontSize: "13px", lineHeight: 1.7, resize: "vertical", fontFamily: "'DM Mono', monospace" }}
+            value={input.transcript}
+            onChange={(e) => onChange({ ...input, transcript: e.target.value })}
+            placeholder="Paste your transcript here…"
+          />
+        </div>
+
+        {/* HuggingFace token */}
+        <div style={{ marginBottom: "14px" }}>
+          <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+            HuggingFace token <span style={{ color: "#3a3a50", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(for chat feature)</span>
+          </label>
+          <input
+            className="field"
+            style={{ height: "40px", padding: "0 12px", fontSize: "13px", fontFamily: "'DM Mono', monospace" }}
+            type="password"
+            placeholder="hf_xxxxxxxxxxxxxxxx"
+            value={hfToken}
+            onChange={e => onHfTokenChange(e.target.value)}
+          />
+          <p style={{ fontSize: "11px", color: "#3a3a50", margin: "5px 0 0" }}>
+            Free at huggingface.co/settings/tokens — needed only for the chat panel
+          </p>
+        </div>
+
+        {/* CTA */}
+        <button
+          className="btn-gold"
+          style={{ width: "100%", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "15px" }}
+          type="button"
+          onClick={onAnalyze}
+          disabled={loading}
+        >
+          <Play size={16} />
+          {loading ? "Running accountability agents…" : "Run accountability agent"}
+        </button>
+      </div>
+    </div>
   );
 }

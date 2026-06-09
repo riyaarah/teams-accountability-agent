@@ -1,225 +1,292 @@
 "use client";
 
-import { BriefcaseBusiness, CheckCircle2, ClipboardCheck, ClipboardList, Copy, Filter, HelpCircle, Mail, Send, ShieldAlert, ShieldCheck, UserRoundCheck } from "lucide-react";
+import {
+  BriefcaseBusiness, CheckCircle2, ClipboardCheck, ClipboardList,
+  Copy, Filter, HelpCircle, Mail, Send, ShieldAlert, ShieldCheck, UserRoundCheck
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionCard, type ReviewStatus } from "@/components/ActionCard";
+import { MeetingChat } from "@/components/MeetingChat";
 import { TracePanel } from "@/components/TracePanel";
+import { MeetingChatPanel } from "@/components/MeetingChatPanel";
 import type { MeetingAnalysis } from "@/types/meeting";
 
-export function Results({ analysis }: { analysis: MeetingAnalysis }) {
+export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfToken: string }) {
   const [selectedOwner, setSelectedOwner] = useState("All employees");
   const [reviewStatuses, setReviewStatuses] = useState<Record<string, ReviewStatus>>(() =>
-    Object.fromEntries(analysis.actionItems.map((item) => [item.id, "suggested" satisfies ReviewStatus]))
+    Object.fromEntries(analysis.actionItems.map(item => [item.id, "suggested" satisfies ReviewStatus]))
   );
-  const highRisk = analysis.actionItems.filter((item) => item.risk === "high").length;
-  const unassigned = analysis.actionItems.filter((item) => item.owner === "Unassigned").length;
-  const owners = useMemo(() => ["All employees", ...Array.from(new Set(analysis.actionItems.map((item) => item.owner)))], [analysis.actionItems]);
-  const visibleItems = selectedOwner === "All employees" ? analysis.actionItems : analysis.actionItems.filter((item) => item.owner === selectedOwner);
-  const approvedItems = analysis.actionItems.filter((item) => reviewStatuses[item.id] === "approved");
-  const needsEdit = analysis.actionItems.filter((item) => reviewStatuses[item.id] === "needsEdit").length;
-  const dismissed = analysis.actionItems.filter((item) => reviewStatuses[item.id] === "dismissed").length;
+
+  const highRisk = analysis.actionItems.filter(i => i.risk === "high").length;
+  const unassigned = analysis.actionItems.filter(i => i.owner === "Unassigned").length;
+  const owners = useMemo(() => ["All employees", ...Array.from(new Set(analysis.actionItems.map(i => i.owner)))], [analysis.actionItems]);
+  const visibleItems = selectedOwner === "All employees" ? analysis.actionItems : analysis.actionItems.filter(i => i.owner === selectedOwner);
+  const approvedItems = analysis.actionItems.filter(i => reviewStatuses[i.id] === "approved");
+  const needsEdit = analysis.actionItems.filter(i => reviewStatuses[i.id] === "needsEdit").length;
+  const dismissed = analysis.actionItems.filter(i => reviewStatuses[i.id] === "dismissed").length;
   const approvedPlannerExport = buildApprovedPlannerExport(approvedItems);
   const roleSummary = buildRoleSummary(selectedOwner, visibleItems);
 
+  const scoreColor = analysis.accountabilityScore >= 75 ? "#4caf7d"
+    : analysis.accountabilityScore >= 50 ? "#d4853a" : "#e05252";
+  const scoreBg = analysis.accountabilityScore >= 75 ? "#112a1e"
+    : analysis.accountabilityScore >= 50 ? "#2a2010" : "#2a1010";
+
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-lg border border-night/10 bg-white shadow-crisp">
-        <div className="grid lg:grid-cols-[0.75fr_1.25fr]">
-          <div className="bg-night p-6 text-white">
-            <p className="text-sm font-black uppercase text-white/55">Accountability score</p>
-            <p className="mt-3 text-7xl font-black">{analysis.accountabilityScore}</p>
-            <p className="mt-4 leading-7 text-white/70">{analysis.executiveSummary}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }} className="animate-fadeup">
+
+      {/* Score hero */}
+      <div style={{
+        display: "grid", gridTemplateColumns: "auto 1fr",
+        gap: "2rem", alignItems: "stretch",
+        background: "#111118", border: "1px solid #2e2e3f",
+        borderRadius: "16px", overflow: "hidden"
+      }}>
+        {/* Score panel */}
+        <div style={{
+          background: scoreBg,
+          borderRight: "1px solid #2e2e3f",
+          padding: "2rem 2.5rem",
+          display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+          minWidth: "200px"
+        }}>
+          <p style={{ fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 0.5rem" }}>
+            Accountability
+          </p>
+          <div className="font-display" style={{ fontSize: "6rem", fontWeight: 800, color: scoreColor, lineHeight: 1 }}>
+            {analysis.accountabilityScore}
           </div>
-          <div className="grid gap-3 p-6 sm:grid-cols-3">
-            <Metric label="Action items" value={analysis.actionItems.length} />
-            <Metric label="High risk" value={highRisk} />
-            <Metric label="Unassigned" value={unassigned} />
-            <Metric label="Approved" value={approvedItems.length} />
-            <Metric label="Needs edit" value={needsEdit} />
-            <Metric label="Dismissed" value={dismissed} />
-            <Metric label="Decisions" value={analysis.decisions.length} />
-            <Metric label="Open questions" value={analysis.openQuestions.length} />
-            <Metric label="Planner rows" value={analysis.actionItems.length} />
+          <p style={{ fontSize: "12px", color: "#65625a", margin: "0.5rem 0 0", letterSpacing: "0.04em" }}>/100</p>
+        </div>
+
+        {/* Summary + metrics */}
+        <div style={{ padding: "1.5rem 2rem" }}>
+          <p style={{ fontSize: "14px", color: "#a8a499", lineHeight: 1.7, margin: "0 0 1.5rem", maxWidth: "600px" }}>
+            {analysis.executiveSummary}
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "10px" }}>
+            <StatCard label="Action items" value={analysis.actionItems.length} />
+            <StatCard label="High risk" value={highRisk} color="#e05252" />
+            <StatCard label="Unassigned" value={unassigned} color="#d4853a" />
+            <StatCard label="Approved" value={approvedItems.length} color="#4caf7d" />
+            <StatCard label="Needs edit" value={needsEdit} />
+            <StatCard label="Dismissed" value={dismissed} />
+            <StatCard label="Decisions" value={analysis.decisions.length} />
+            <StatCard label="Questions" value={analysis.openQuestions.length} />
+            <StatCard label="Planner rows" value={analysis.actionItems.length} />
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Panel icon={<UserRoundCheck size={20} />} title="My commitments">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex min-w-64 flex-1 items-center gap-2 rounded-md border border-night/10 bg-white px-3 py-2">
-              <Filter size={16} className="text-cobalt" />
+      {/* Commitments + Trust */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <Panel icon={<UserRoundCheck size={18} color="#c9a84c" />} title="My commitments">
+          <div style={{ marginBottom: "12px" }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              background: "#0d0d14", border: "1px solid #232330",
+              borderRadius: "8px", padding: "0 12px"
+            }}>
+              <Filter size={14} color="#c9a84c" />
               <select
-                className="h-9 flex-1 bg-transparent font-bold outline-none"
+                style={{
+                  flex: 1, height: "38px", background: "transparent",
+                  border: "none", color: "#f2f0eb", fontSize: "13px",
+                  fontWeight: 600, outline: "none", cursor: "pointer"
+                }}
                 value={selectedOwner}
-                onChange={(event) => setSelectedOwner(event.target.value)}
+                onChange={e => setSelectedOwner(e.target.value)}
               >
-                {owners.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
+                {owners.map(o => <option key={o} value={o} style={{ background: "#111118" }}>{o}</option>)}
               </select>
-            </label>
+            </div>
           </div>
-          <p className="rounded-md bg-paper p-3 text-sm font-bold leading-6 text-night/70">{roleSummary}</p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Metric label="Visible tasks" value={visibleItems.length} />
-            <Metric label="Blocked" value={visibleItems.filter((item) => item.blockers.length > 0).length} />
-            <Metric label="Due missing" value={visibleItems.filter((item) => item.dueDate === "Needs date").length} />
+          <p style={{ fontSize: "13px", color: "#a8a499", lineHeight: 1.6, background: "#0d0d14", borderRadius: "8px", padding: "10px 12px", marginBottom: "12px" }}>
+            {roleSummary}
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+            <StatCard label="Visible tasks" value={visibleItems.length} />
+            <StatCard label="Blocked" value={visibleItems.filter(i => i.blockers.length > 0).length} color="#d4853a" />
+            <StatCard label="Date missing" value={visibleItems.filter(i => i.dueDate === "Needs date").length} color="#e05252" />
           </div>
         </Panel>
 
-        <Panel icon={<ShieldCheck size={20} />} title="Employee trust controls">
-          <TrustRow title="Human approval" copy="No task is treated as ready for Planner until an employee approves it." />
-          <TrustRow title="Evidence attached" copy="Every suggestion keeps the transcript line that produced it for quick correction." />
-          <TrustRow title="Microsoft 365 handoff" copy="Approved tasks can move to Planner, To Do, Outlook follow-up, or a Teams recap." />
-          <TrustRow title="Sensitive meeting safety" copy="The review queue supports dismissing items before they leave the analysis screen." />
+        <Panel icon={<ShieldCheck size={18} color="#c9a84c" />} title="Trust controls">
+          {[
+            { t: "Human approval", d: "No task is treated as ready for Planner until an employee approves it." },
+            { t: "Evidence attached", d: "Every suggestion keeps the transcript line that produced it for quick correction." },
+            { t: "Microsoft 365 handoff", d: "Approved tasks can move to Planner, To Do, Outlook follow-up, or a Teams recap." },
+            { t: "Sensitive meeting safety", d: "The review queue supports dismissing items before they leave the analysis screen." },
+          ].map(row => (
+            <div key={row.t} style={{
+              background: "#0d0d14", border: "1px solid #232330",
+              borderRadius: "8px", padding: "10px 12px"
+            }}>
+              <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 3px" }}>{row.t}</p>
+              <p style={{ fontSize: "12px", color: "#65625a", margin: 0, lineHeight: 1.5 }}>{row.d}</p>
+            </div>
+          ))}
         </Panel>
-      </section>
+      </div>
 
-      <section className="rounded-lg border border-night/10 bg-white p-5 shadow-crisp">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-cobalt">
-            <BriefcaseBusiness size={20} />
-            <h2 className="text-xl font-black text-night">Microsoft 365 actions</h2>
-          </div>
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black uppercase text-emerald-700">
-            {approvedItems.length} approved
-          </span>
+      {/* M365 Actions */}
+      <Panel icon={<BriefcaseBusiness size={18} color="#c9a84c" />} title="Microsoft 365 actions">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px" }}>
+          <M365Btn icon={<ClipboardCheck size={16} />} label="Create Planner tasks" detail={`${approvedItems.length} approved rows`} disabled={!approvedItems.length} />
+          <M365Btn icon={<CheckCircle2 size={16} />} label="Assign in To Do" detail="Owner-filtered tasks" disabled={!approvedItems.length} />
+          <M365Btn icon={<Mail size={16} />} label="Draft Outlook recap" detail="Actions and questions" disabled={false} />
+          <M365Btn icon={<Send size={16} />} label="Post Teams summary" detail="Channel-ready recap" disabled={false} />
         </div>
-        <div className="grid gap-3 md:grid-cols-4">
-          <M365Action icon={<ClipboardCheck size={18} />} label="Create Planner tasks" detail={`${approvedItems.length} approved rows`} disabled={!approvedItems.length} />
-          <M365Action icon={<CheckCircle2 size={18} />} label="Assign in To Do" detail="Owner-filtered tasks" disabled={!approvedItems.length} />
-          <M365Action icon={<Mail size={18} />} label="Draft Outlook recap" detail="Actions and questions" disabled={false} />
-          <M365Action icon={<Send size={18} />} label="Post Teams summary" detail="Channel-ready recap" disabled={false} />
-        </div>
-      </section>
+      </Panel>
 
-      <section>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="text-cobalt" />
-            <h2 className="text-2xl font-black">Review queue</h2>
+      {/* Review queue */}
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <ClipboardList size={18} color="#c9a84c" />
+            <h2 className="font-display" style={{ fontWeight: 800, fontSize: "1.25rem", color: "#f2f0eb", margin: 0 }}>Review queue</h2>
           </div>
-          <span className="text-sm font-bold text-night/55">{visibleItems.length} shown</span>
+          <span style={{ fontSize: "12px", color: "#65625a", fontWeight: 600 }}>{visibleItems.length} shown</span>
         </div>
-        <div className="grid gap-4 xl:grid-cols-2">
-          {visibleItems.map((item) => (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          {visibleItems.map(item => (
             <ActionCard
               key={item.id}
               item={item}
               status={reviewStatuses[item.id] ?? "suggested"}
-              onStatusChange={(status) => setReviewStatuses((current) => ({ ...current, [item.id]: status }))}
+              onStatusChange={status => setReviewStatuses(cur => ({ ...cur, [item.id]: status }))}
             />
           ))}
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <Panel icon={<ShieldAlert size={20} />} title="Decisions made">
-          {analysis.decisions.length ? (
-            analysis.decisions.map((decision) => (
-              <div key={decision.evidence} className="rounded-md bg-paper p-3">
-                <p className="font-bold">{decision.decision}</p>
-                <p className="mt-1 text-sm text-night/55">{decision.evidence}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-night/60">No explicit decisions detected.</p>
+      {/* Decisions + Questions */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <Panel icon={<ShieldAlert size={18} color="#c9a84c" />} title="Decisions made">
+          {analysis.decisions.length ? analysis.decisions.map(d => (
+            <div key={d.evidence} style={{ background: "#0d0d14", border: "1px solid #232330", borderRadius: "8px", padding: "10px 12px" }}>
+              <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 4px" }}>{d.decision}</p>
+              <p className="font-mono" style={{ fontSize: "11px", color: "#65625a", margin: 0 }}>{d.evidence}</p>
+            </div>
+          )) : (
+            <p style={{ fontSize: "13px", color: "#65625a" }}>No explicit decisions detected.</p>
           )}
         </Panel>
-        <Panel icon={<HelpCircle size={20} />} title="Open questions">
-          {analysis.openQuestions.length ? (
-            analysis.openQuestions.map((question) => (
-              <div key={question.question} className="rounded-md bg-paper p-3">
-                <p className="font-bold">{question.question}</p>
-                <p className="mt-1 text-sm text-night/60">Owner: {question.suggestedOwner} · {question.whyItMatters}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-night/60">No open questions detected.</p>
+
+        <Panel icon={<HelpCircle size={18} color="#c9a84c" />} title="Open questions">
+          {analysis.openQuestions.length ? analysis.openQuestions.map(q => (
+            <div key={q.question} style={{ background: "#0d0d14", border: "1px solid #232330", borderRadius: "8px", padding: "10px 12px" }}>
+              <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 4px" }}>{q.question}</p>
+              <p style={{ fontSize: "12px", color: "#65625a", margin: 0 }}>Owner: {q.suggestedOwner} · {q.whyItMatters}</p>
+            </div>
+          )) : (
+            <p style={{ fontSize: "13px", color: "#65625a" }}>No open questions detected.</p>
           )}
         </Panel>
-      </section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <TextArtifact icon={<Copy size={20} />} title="Approved Planner export" text={approvedPlannerExport || "Approve tasks in the review queue to stage Planner rows."} />
-        <TextArtifact icon={<Mail size={20} />} title="Follow-up email" text={analysis.followUpEmail} />
-      </section>
+      {/* Artifacts */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <CodeArtifact icon={<Copy size={16} />} title="Approved Planner export" text={approvedPlannerExport || "Approve tasks in the review queue to stage Planner rows."} />
+        <CodeArtifact icon={<Mail size={16} />} title="Follow-up email" text={analysis.followUpEmail} />
+      </div>
+
+      {/* Chat */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <MeetingChatPanel analysis={analysis} />
+        {/* Chat */}
+      <MeetingChat analysis={analysis} hfToken={hfToken} />
 
       <TracePanel steps={analysis.agentTrace} />
+      </div>
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div className="rounded-lg border border-night/10 bg-paper p-4">
-      <p className="text-xs font-black uppercase text-night/45">{label}</p>
-      <p className="mt-2 text-3xl font-black">{value}</p>
+    <div style={{
+      background: "#0d0d14", border: "1px solid #1a1a24",
+      borderRadius: "8px", padding: "10px 12px"
+    }}>
+      <p style={{ fontSize: "10px", fontWeight: 600, color: "#3a3a50", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 5px" }}>{label}</p>
+      <p className="font-display" style={{ fontSize: "1.75rem", fontWeight: 800, color: color ?? "#f2f0eb", margin: 0 }}>{value}</p>
     </div>
   );
 }
 
-function TrustRow({ title, copy }: { title: string; copy: string }) {
+function Panel({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-md bg-paper p-3">
-      <p className="font-black">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-night/60">{copy}</p>
+    <div style={{ background: "#111118", border: "1px solid #2e2e3f", borderRadius: "12px", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "1rem 1.25rem", borderBottom: "1px solid #1a1a24" }}>
+        {icon}
+        <h2 className="font-display" style={{ fontWeight: 700, fontSize: "15px", color: "#f2f0eb", margin: 0 }}>{title}</h2>
+      </div>
+      <div style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "8px" }}>{children}</div>
     </div>
   );
 }
 
-function M365Action({ icon, label, detail, disabled }: { icon: React.ReactNode; label: string; detail: string; disabled: boolean }) {
+function M365Btn({ icon, label, detail, disabled }: { icon: React.ReactNode; label: string; detail: string; disabled: boolean }) {
   return (
     <button
-      className="min-h-24 rounded-md border border-night/10 bg-paper p-4 text-left transition hover:-translate-y-0.5 hover:border-cobalt/40 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 disabled:hover:border-night/10 disabled:hover:bg-paper"
       type="button"
       disabled={disabled}
+      style={{
+        textAlign: "left", background: "#0d0d14",
+        border: `1px solid ${disabled ? "#1a1a24" : "#2e2e3f"}`,
+        borderRadius: "10px", padding: "14px",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        transition: "all 0.15s"
+      }}
+      onMouseEnter={e => { if (!disabled) (e.currentTarget.style.borderColor = "#8a6d2e"); }}
+      onMouseLeave={e => { if (!disabled) (e.currentTarget.style.borderColor = "#2e2e3f"); }}
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-cobalt shadow-sm">{icon}</span>
-      <span className="mt-3 block font-black">{label}</span>
-      <span className="mt-1 block text-sm font-bold text-night/50">{detail}</span>
+      <div style={{
+        width: "32px", height: "32px", borderRadius: "8px",
+        background: "rgba(201,168,76,0.1)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#c9a84c", marginBottom: "10px"
+      }}>
+        {icon}
+      </div>
+      <p className="font-display" style={{ fontWeight: 700, fontSize: "13px", color: "#f2f0eb", margin: "0 0 3px" }}>{label}</p>
+      <p style={{ fontSize: "11px", color: "#65625a", margin: 0 }}>{detail}</p>
     </button>
+  );
+}
+
+function CodeArtifact({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div style={{ background: "#111118", border: "1px solid #2e2e3f", borderRadius: "12px", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "1rem 1.25rem", borderBottom: "1px solid #1a1a24" }}>
+        <span style={{ color: "#c9a84c" }}>{icon}</span>
+        <h2 className="font-display" style={{ fontWeight: 700, fontSize: "15px", color: "#f2f0eb", margin: 0 }}>{title}</h2>
+      </div>
+      <pre className="font-mono" style={{
+        maxHeight: "320px", overflowY: "auto",
+        padding: "1rem 1.25rem",
+        fontSize: "12px", lineHeight: 1.7,
+        color: "#a8a499", margin: 0,
+        whiteSpace: "pre-wrap"
+      }}>
+        {text}
+      </pre>
+    </div>
   );
 }
 
 function buildApprovedPlannerExport(items: MeetingAnalysis["actionItems"]) {
   return items
-    .map((item) => `${item.id} | ${item.suggestedPlannerBucket} | ${item.owner} | ${item.dueDate} | ${item.task} | Risk: ${item.risk.toUpperCase()} | Status: APPROVED`)
+    .map(item => `${item.id} | ${item.suggestedPlannerBucket} | ${item.owner} | ${item.dueDate} | ${item.task} | Risk: ${item.risk.toUpperCase()} | APPROVED`)
     .join("\n");
 }
 
 function buildRoleSummary(owner: string, items: MeetingAnalysis["actionItems"]) {
-  const blocked = items.filter((item) => item.blockers.length > 0).length;
-  const highRisk = items.filter((item) => item.risk === "high").length;
-  if (owner === "All employees") {
-    return `${items.length} tasks across the meeting, including ${blocked} blocked items and ${highRisk} high-risk commitments.`;
-  }
-  return `${owner} has ${items.length} visible commitments, ${blocked} blockers to clear, and ${highRisk} high-risk items to watch.`;
-}
-
-function Panel({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-lg border border-night/10 bg-white p-5 shadow-crisp">
-      <div className="mb-4 flex items-center gap-2 text-cobalt">
-        {icon}
-        <h2 className="text-xl font-black text-night">{title}</h2>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </section>
-  );
-}
-
-function TextArtifact({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
-  return (
-    <section className="rounded-lg border border-night/10 bg-white p-5 shadow-crisp">
-      <div className="mb-4 flex items-center gap-2 text-cobalt">
-        {icon}
-        <h2 className="text-xl font-black text-night">{title}</h2>
-      </div>
-      <pre className="max-h-[360px] overflow-auto whitespace-pre-wrap rounded-md bg-night p-4 text-sm leading-6 text-white">{text}</pre>
-    </section>
-  );
+  const blocked = items.filter(i => i.blockers.length > 0).length;
+  const highRisk = items.filter(i => i.risk === "high").length;
+  if (owner === "All employees")
+    return `${items.length} tasks across the meeting — ${blocked} blocked, ${highRisk} high-risk.`;
+  return `${owner} has ${items.length} commitments, ${blocked} blockers to clear, ${highRisk} high-risk items.`;
 }
