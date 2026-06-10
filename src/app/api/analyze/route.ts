@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { MeetingInput, MeetingAnalysis } from "@/types/meeting";
 
-async function callGroq(systemPrompt: string, userPrompt: string): Promise<string> {
+async function callGroq(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -10,7 +10,7 @@ async function callGroq(systemPrompt: string, userPrompt: string): Promise<strin
     },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
-      max_tokens: 1000,
+      max_tokens: maxTokens,
       temperature: 0.2,
       messages: [
         { role: "system", content: systemPrompt },
@@ -51,11 +51,17 @@ export async function POST(request: Request) {
 
     // AGENT 1: Extract action items
     const actionRaw = await callGroq(
-      `You are a commitment extraction agent. Extract every action item, task, or commitment from meeting transcripts.
-Return ONLY valid JSON array. No markdown, no explanation.
-Each item: { "id": "ACT-01", "task": "string", "owner": "string or Unassigned", "dueDate": "string or Needs date", "confidence": 0-100, "riskScore": 0-100, "blockers": ["string"], "evidence": "exact quote from transcript", "suggestedPlannerBucket": "Committed|At risk|Needs clarification", "followUpMessage": "short Teams message to send" }
-Risk score: 0=low, 100=high. Higher if: no owner, no date, has blockers, urgency is high/critical.`,
-      `${context}\n\nTranscript:\n${input.transcript}`
+      `You are a commitment extraction agent. Extract EVERY action item, task, or commitment from the transcript.
+CRITICAL RULES:
+1. Return ONLY a raw JSON array — no markdown, no backticks, no explanation
+2. NEVER return empty array if people said they would do something
+3. Look for keywords: "I will", "I'll", "I can", "owns", "will do", "send", "draft", "update", "create", "confirm", "document", "schedule", "going to"
+4. Each person's commitment = one action item
+
+Each item must be: { "id": "ACT-01", "task": "clear task description", "owner": "first name only or Unassigned", "dueDate": "date string or Needs date", "confidence": 85, "riskScore": 0-100, "blockers": [], "evidence": "exact quote", "suggestedPlannerBucket": "Committed", "followUpMessage": "short follow-up" }
+Risk: 80+ = no owner/date. 50-70 = has blockers. 10-40 = assigned with date.`,
+      `${context}\n\nTranscript:\n${input.transcript}`,
+      3000
     );
 
     const actionItems = safeJson<MeetingAnalysis["actionItems"]>(actionRaw, []).map((item, i) => ({
@@ -63,6 +69,8 @@ Risk score: 0=low, 100=high. Higher if: no owner, no date, has blockers, urgency
       id: `ACT-${String(i + 1).padStart(2, "0")}`,
       risk: item.riskScore >= 70 ? "high" : item.riskScore >= 45 ? "medium" : "low" as "low" | "medium" | "high"
     }));
+    console.log("ACTION RAW:", actionRaw.slice(0, 500));
+    console.log("ACTION ITEMS:", actionItems.length);
 
     // AGENT 2: Extract decisions
     const decisionsRaw = await callGroq(

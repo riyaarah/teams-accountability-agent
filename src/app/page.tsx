@@ -24,7 +24,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<MeetingAnalysis>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const [hfToken, setHfToken] = useState("");
+  const [hfToken] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"analyze" | "history" | "leaderboard">("analyze");
 
@@ -39,7 +39,7 @@ export default function Home() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, hfToken })
+        body: JSON.stringify(input)
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Could not analyze this meeting.");
@@ -112,7 +112,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div>
-                  <TranscriptForm input={input} loading={loading} onChange={setInput} onAnalyze={analyze} onSample={loadSample} hfToken={hfToken} onHfTokenChange={setHfToken} />
+                  <TranscriptForm input={input} loading={loading} onChange={setInput} onAnalyze={analyze} onSample={loadSample} />
                 </div>
               </div>
             </section>

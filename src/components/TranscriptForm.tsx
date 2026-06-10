@@ -7,11 +7,9 @@ import { TranscriptUpload } from "@/components/TranscriptUpload";
 type Props = {
   input: MeetingInput;
   loading: boolean;
-  hfToken: string;
   onChange: (input: MeetingInput) => void;
   onAnalyze: () => void;
   onSample: () => void;
-  onHfTokenChange: (token: string) => void;
 };
 
 const urgencyColors = {
@@ -20,7 +18,7 @@ const urgencyColors = {
   critical: { bg: "#2a1010", border: "#4a2020", text: "#e05252" },
 };
 
-export function TranscriptForm({ input, loading, hfToken, onChange, onAnalyze, onSample, onHfTokenChange }: Props) {
+export function TranscriptForm({ input, loading, onChange, onAnalyze, onSample }: Props) {
   const urgency = urgencyColors[input.urgency];
 
   return (
@@ -132,24 +130,6 @@ export function TranscriptForm({ input, loading, hfToken, onChange, onAnalyze, o
             onChange={(e) => onChange({ ...input, transcript: e.target.value })}
             placeholder="Paste your transcript here…"
           />
-        </div>
-
-        {/* HuggingFace token */}
-        <div style={{ marginBottom: "14px" }}>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#65625a", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
-            HuggingFace token <span style={{ color: "#3a3a50", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(for chat feature)</span>
-          </label>
-          <input
-            className="field"
-            style={{ height: "40px", padding: "0 12px", fontSize: "13px", fontFamily: "'DM Mono', monospace" }}
-            type="password"
-            placeholder="hf_xxxxxxxxxxxxxxxx"
-            value={hfToken}
-            onChange={e => onHfTokenChange(e.target.value)}
-          />
-          <p style={{ fontSize: "11px", color: "#3a3a50", margin: "5px 0 0" }}>
-            Free at huggingface.co/settings/tokens — needed only for the chat panel
-          </p>
         </div>
 
         {/* CTA */}
