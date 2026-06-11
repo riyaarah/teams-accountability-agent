@@ -9,6 +9,7 @@ import { ActionCard, type ReviewStatus } from "@/components/ActionCard";
 import { ExportPDF } from "@/components/ExportPDF";
 import { MeetingChat } from "@/components/MeetingChat";
 import { RiskHeatmap } from "@/components/RiskHeatmap";
+import { ScoreExplainer } from "@/components/ScoreExplainer";
 import { SmartNudges } from "@/components/SmartNudges";
 import { TaskTracker } from "@/components/TaskTracker";
 import { TracePanel } from "@/components/TracePanel";
@@ -70,6 +71,9 @@ export function Results({ analysis, hfToken }: { analysis: MeetingAnalysis; hfTo
           </div>
         </div>
       </div>
+
+      {/* Score explainer */}
+      <ScoreExplainer analysis={analysis} />
 
       {/* Commitments + Trust */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
